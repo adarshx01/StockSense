@@ -32,7 +32,7 @@ export const authApi = {
     });
   },
   forgotPassword(email: string) {
-    return api<{ message?: string }>('/api/auth/forgot-password', {
+    return api<{ message?: string; devOtp?: string }>('/api/auth/forgot-password', {
       method: 'POST',
       body: JSON.stringify({ email }),
     });

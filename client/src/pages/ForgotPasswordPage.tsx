@@ -15,6 +15,7 @@ export function ForgotPasswordPage() {
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
+  const [devOtp, setDevOtp] = useState('');
   const [loading, setLoading] = useState(false);
   const rules = passwordChecks(password, confirm);
 
@@ -25,6 +26,8 @@ export function ForgotPasswordPage() {
     try {
       const result = await authApi.forgotPassword(email.trim());
       setInfo(result.message || 'If the email exists, an OTP has been sent');
+      setDevOtp(result.devOtp || '');
+      if (result.devOtp) setOtp(result.devOtp);
       setStep('reset');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not send the reset email');
@@ -64,6 +67,7 @@ export function ForgotPasswordPage() {
         <form className="auth-card" onSubmit={reset}>
           <h2>Enter the code</h2>
           {info ? <p className="muted">{info}</p> : null}
+          {devOtp ? <p className="muted">Development code: <strong>{devOtp}</strong></p> : null}
           <Input label="Email" value={email} readOnly />
           <Input label="OTP" inputMode="numeric" autoComplete="one-time-code" value={otp} onChange={(event) => setOtp(event.target.value)} required />
           <Input label="New password" type="password" autoComplete="new-password" value={password} onChange={(event) => setPassword(event.target.value)} required />

@@ -99,11 +99,10 @@ export async function authRoutes(fastify: FastifyInstance) {
       [user.rows[0].id, otp, expiresAt],
     );
     const sent = await sendOtpEmail(email, otp);
-    if (!sent.delivered && process.env.NODE_ENV === 'development') {
+    if (!sent.delivered && process.env.NODE_ENV !== 'production') {
       return reply.send({
         message: 'If the email exists, an OTP has been sent',
-        otp,
-        error: sent.error,
+        devOtp: otp,
       });
     }
     if (!sent.delivered) {
