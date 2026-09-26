@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
+import { camelizeKeys, searchTerm } from '../utils/shape.ts';
 import { parseBody } from '../utils/validate.ts';
 import { createAndApplyAdjustment, withTx } from '../services/inventoryService.ts';
 
@@ -8,7 +9,7 @@ export async function stockRoutes(fastify: FastifyInstance) {
 
   fastify.get('/api/stock', staff, async (request) => {
     const query = request.query as Record<string, string | undefined>;
-    const search = query.search;
+    const search = searchTerm(query);
     const params: unknown[] = [];
     let where = '';
     if (search) {
@@ -90,12 +91,14 @@ export async function stockRoutes(fastify: FastifyInstance) {
 
   fastify.put('/api/stock/:productId', staff, async (request) => {
     const { productId } = request.params as { productId: string };
+    const raw = camelizeKeys(request.body ?? {}) as Record<string, unknown>;
+    if (raw.onHand === undefined && raw.newQuantity !== undefined) raw.onHand = raw.newQuantity;
     const body = parseBody(
       z.object({
         locationId: z.string().uuid(),
         onHand: z.number().min(0),
       }),
-      request.body,
+      raw,
     );
     const adjustmentId = await withTx(fastify.db, (client) =>
       createAndApplyAdjustment(client, {

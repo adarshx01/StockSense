@@ -2,7 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { AppError, NotFoundError } from '../utils/errors.ts';
 import { dateSchema, lineSchema, parseBody } from '../utils/validate.ts';
-import { shape } from '../utils/shape.ts';
+import { searchTerm, shape, statusTerm } from '../utils/shape.ts';
 import { generateReference } from '../services/referenceService.ts';
 import { confirmTransfer, validateTransfer, withTx } from '../services/inventoryService.ts';
 
@@ -46,12 +46,14 @@ export async function transferRoutes(fastify: FastifyInstance) {
     const query = request.query as Record<string, string | undefined>;
     const params: unknown[] = [];
     const where: string[] = [];
-    if (query.search) {
-      params.push(`%${query.search}%`);
+    const search = searchTerm(query);
+    const status = statusTerm(query);
+    if (search) {
+      params.push(`%${search}%`);
       where.push(`(t.reference ILIKE $${params.length} OR t.contact ILIKE $${params.length})`);
     }
-    if (query.status) {
-      params.push(query.status);
+    if (status) {
+      params.push(status);
       where.push(`t.status = $${params.length}`);
     }
     const result = await fastify.db.query(

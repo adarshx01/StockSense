@@ -251,4 +251,18 @@ test('posts the inventory story once and only once', async () => {
   const dashboard = await api('GET', '/api/dashboard/stats');
   assert.equal(typeof dashboard.totalUnits, 'number');
   assert.ok(Array.isArray(dashboard.documents));
+  assert.equal(typeof dashboard.receiptCard.toReceive, 'number');
+  assert.equal(typeof dashboard.deliveryCard.toDeliver, 'number');
+
+  const byQuery = await api('GET', '/api/stock?q=ROD100');
+  assert.ok(byQuery.some((row: { sku: string }) => row.sku === 'ROD100'));
+  const filtered = await api('GET', '/api/dashboard/stats?status=cancelled&type=receipt');
+  assert.ok(filtered.documents.every((row: { status: string; type: string }) => row.status === 'canceled' && row.type === 'receipt'));
+
+  const edited = await api('PUT', `/api/stock/${product.id}`, {
+    location_id: stock2.id,
+    new_quantity: 7,
+  });
+  assert.equal(edited.onHand, 7);
+  assert.equal(edited.delta, 0);
 });

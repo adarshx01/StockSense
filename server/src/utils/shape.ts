@@ -26,6 +26,15 @@ export function shape<T = Record<string, unknown>>(row: T): Record<string, unkno
   return out;
 }
 
+export function searchTerm(query: Record<string, string | undefined>): string | undefined {
+  return query.search || query.q;
+}
+
+export function statusTerm(query: Record<string, string | undefined>): string | undefined {
+  if (!query.status) return undefined;
+  return query.status === 'cancelled' ? 'canceled' : query.status;
+}
+
 export function camelizeKeys(input: unknown): unknown {
   if (Array.isArray(input)) return input.map(camelizeKeys);
   if (input && typeof input === 'object') {

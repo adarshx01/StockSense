@@ -2,7 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { AppError, NotFoundError } from '../utils/errors.ts';
 import { parseBody } from '../utils/validate.ts';
-import { shape } from '../utils/shape.ts';
+import { searchTerm, shape, statusTerm } from '../utils/shape.ts';
 import { generateReference } from '../services/referenceService.ts';
 import { applyAdjustment, withTx } from '../services/inventoryService.ts';
 
@@ -37,12 +37,14 @@ export async function adjustmentRoutes(fastify: FastifyInstance) {
     const query = request.query as Record<string, string | undefined>;
     const params: unknown[] = [];
     const where: string[] = [];
-    if (query.search) {
-      params.push(`%${query.search}%`);
+    const search = searchTerm(query);
+    const status = statusTerm(query);
+    if (search) {
+      params.push(`%${search}%`);
       where.push(`(a.reference ILIKE $${params.length} OR a.contact ILIKE $${params.length} OR p.name ILIKE $${params.length})`);
     }
-    if (query.status) {
-      params.push(query.status);
+    if (status) {
+      params.push(status);
       where.push(`a.status = $${params.length}`);
     }
     const result = await fastify.db.query(

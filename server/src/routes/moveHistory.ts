@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { shape } from '../utils/shape.ts';
+import { searchTerm, shape } from '../utils/shape.ts';
 
 export async function moveHistoryRoutes(fastify: FastifyInstance) {
   fastify.get(
@@ -9,8 +9,9 @@ export async function moveHistoryRoutes(fastify: FastifyInstance) {
       const query = request.query as Record<string, string | undefined>;
       const params: unknown[] = [];
       const where: string[] = [];
-      if (query.search) {
-        params.push(`%${query.search}%`);
+      const search = searchTerm(query);
+      if (search) {
+        params.push(`%${search}%`);
         where.push(`(sm.reference ILIKE $${params.length} OR sm.contact ILIKE $${params.length})`);
       }
       if (query.direction) {
@@ -29,7 +30,11 @@ export async function moveHistoryRoutes(fastify: FastifyInstance) {
          ORDER BY sm.created_at DESC, sm.id`,
         params,
       );
-      return result.rows.map(shape);
+      return result.rows.map((row) => ({
+        ...shape(row),
+        from: row.from_label,
+        to: row.to_label,
+      }));
     },
   );
 }

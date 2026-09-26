@@ -1,0 +1,156 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: StockSense free-tier public Postgres and Lambda API
+
+Parameters:
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+  SubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+  DbPassword:
+    Type: String
+    NoEcho: true
+  JwtSecret:
+    Type: String
+    NoEcho: true
+
+Resources:
+  DbSg:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: StockSense Postgres 5432
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 5432
+          ToPort: 5432
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: stocksense-db
+
+  DbSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupName: stocksense-db
+      DBSubnetGroupDescription: StockSense default VPC subnets
+      SubnetIds: !Ref SubnetIds
+
+  Database:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBInstanceIdentifier: stocksense-db
+      Engine: postgres
+      EngineVersion: '16.15'
+      DBInstanceClass: db.t3.micro
+      AllocatedStorage: 20
+      StorageType: gp2
+      DBName: stocksense
+      MasterUsername: stocksense
+      MasterUserPassword: !Ref DbPassword
+      PubliclyAccessible: true
+      MultiAZ: false
+      BackupRetentionPeriod: 1
+      VPCSecurityGroups:
+        - !Ref DbSg
+      DBSubnetGroupName: !Ref DbSubnetGroup
+      DeletionProtection: false
+      EnablePerformanceInsights: false
+
+  LambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: stocksense-lambda
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: stocksense-ses
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ses:SendEmail
+                  - ses:SendRawEmail
+                Resource: '*'
+
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/stocksense
+      RetentionInDays: 7
+
+  Function:
+    Type: AWS::Lambda::Function
+    DependsOn: LogGroup
+    Properties:
+      FunctionName: stocksense
+      Runtime: nodejs22.x
+      Handler: index.handler
+      Timeout: 30
+      MemorySize: 256
+      Role: !GetAtt LambdaRole.Arn
+      Code:
+        ZipFile: |
+          exports.handler = async () => ({ statusCode: 200, body: JSON.stringify({ status: 'placeholder' }) });
+      Environment:
+        Variables:
+          DATABASE_URL: !Sub 'postgresql://stocksense:${DbPassword}@${Database.Endpoint.Address}:5432/stocksense'
+          JWT_SECRET: !Ref JwtSecret
+          DATABASE_SSL: 'true'
+          PG_POOL_MAX: '1'
+          NODE_ENV: production
+          CORS_ORIGIN: http://localhost:5173
+          SES_FROM_EMAIL: ''
+          PORT: '3001'
+
+  HttpApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: stocksense
+      ProtocolType: HTTP
+
+  Integration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref HttpApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${Function.Arn}/invocations'
+      PayloadFormatVersion: '2.0'
+      TimeoutInMillis: 29000
+
+  Route:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: ANY /api/{proxy+}
+      Target: !Sub 'integrations/${Integration}'
+
+  Stage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref HttpApi
+      StageName: $default
+      AutoDeploy: true
+
+  InvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref Function
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${HttpApi}/*/*'
+
+Outputs:
+  ApiUrl:
+    Value: !GetAtt HttpApi.ApiEndpoint
+  RdsEndpoint:
+    Value: !GetAtt Database.Endpoint.Address
+  FunctionName:
+    Value: !Ref Function

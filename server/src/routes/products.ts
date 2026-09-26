@@ -2,7 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { AppError, NotFoundError } from '../utils/errors.ts';
 import { parseBody } from '../utils/validate.ts';
-import { shape } from '../utils/shape.ts';
+import { searchTerm, shape } from '../utils/shape.ts';
 import { createAndApplyAdjustment, withTx } from '../services/inventoryService.ts';
 
 const productSchema = z.object({
@@ -10,6 +10,7 @@ const productSchema = z.object({
   sku: z.string().min(1).max(50),
   categoryId: z.string().uuid().nullable().optional(),
   uom: z.string().min(1).max(50).optional(),
+  unitOfMeasure: z.string().min(1).max(50).optional(),
   perUnitCost: z.number().min(0),
   reorderLevel: z.number().int().min(0),
   initialStock: z.number().min(0).optional(),
@@ -40,7 +41,7 @@ export async function productRoutes(fastify: FastifyInstance) {
 
   fastify.get('/api/products', staff, async (request) => {
     const query = request.query as Record<string, string | undefined>;
-    const search = query.search;
+    const search = searchTerm(query);
     const categoryId = query.categoryId ?? query.category_id;
     const params: unknown[] = [];
     const where: string[] = [];
@@ -94,7 +95,7 @@ export async function productRoutes(fastify: FastifyInstance) {
         `INSERT INTO products (name, sku, category_id, uom, per_unit_cost, reorder_level)
          VALUES ($1, $2, $3, $4, $5, $6)
          RETURNING *`,
-        [body.name, body.sku, body.categoryId ?? null, body.uom ?? 'Units', body.perUnitCost, body.reorderLevel],
+        [body.name, body.sku, body.categoryId ?? null, body.uom ?? body.unitOfMeasure ?? 'Units', body.perUnitCost, body.reorderLevel],
       );
       const product = result.rows[0];
       if (body.initialStock && body.initialStock > 0) {
@@ -126,7 +127,7 @@ export async function productRoutes(fastify: FastifyInstance) {
          updated_at = NOW()
        WHERE id = $1
        RETURNING *`,
-      [id, body.name ?? null, body.sku ?? null, body.categoryId ?? null, body.uom ?? null, body.perUnitCost ?? null, body.reorderLevel ?? null],
+      [id, body.name ?? null, body.sku ?? null, body.categoryId ?? null, body.uom ?? body.unitOfMeasure ?? null, body.perUnitCost ?? null, body.reorderLevel ?? null],
     );
     if (!result.rows[0]) throw new NotFoundError('Product');
     return shape(result.rows[0]);

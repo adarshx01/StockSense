@@ -21,14 +21,24 @@ async function loadSecrets(): Promise<void> {
   const client = new SecretsManagerClient({ region: process.env.AWS_REGION || 'ap-south-1' });
   const response = await client.send(new GetSecretValueCommand({ SecretId: secretId }));
   const secret = JSON.parse(response.SecretString || '{}') as {
+    username?: string;
+    password?: string;
+    dbname?: string;
     databaseUrl?: string;
     jwtSecret?: string;
     sesFromEmail?: string;
   };
-  if (secret.databaseUrl) process.env.DATABASE_URL = secret.databaseUrl;
+  if (secret.databaseUrl) {
+    process.env.DATABASE_URL = secret.databaseUrl;
+  } else if (secret.password && process.env.DB_HOST) {
+    const user = secret.username || process.env.DB_USER || 'stocksense';
+    const db = secret.dbname || process.env.DB_NAME || 'stocksense';
+    const port = process.env.DB_PORT || '5432';
+    process.env.DATABASE_URL = `postgresql://${encodeURIComponent(user)}:${encodeURIComponent(secret.password)}@${process.env.DB_HOST}:${port}/${db}`;
+  }
   if (secret.jwtSecret) process.env.JWT_SECRET = secret.jwtSecret;
   if (secret.sesFromEmail) process.env.SES_FROM_EMAIL = secret.sesFromEmail;
-  process.env.DATABASE_SSL = 'true';
+  process.env.DATABASE_SSL = process.env.DATABASE_SSL || 'true';
 }
 
 export const handler = async (event: LambdaEvent, context: { callbackWaitsForEmptyEventLoop: boolean }) => {

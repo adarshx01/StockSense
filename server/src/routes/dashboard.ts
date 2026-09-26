@@ -21,7 +21,7 @@ export async function dashboardRoutes(fastify: FastifyInstance) {
       const warehouseId = query.warehouseId ?? null;
       const locationId = query.locationId ?? null;
       const categoryId = query.categoryId ?? null;
-      const status = query.status ?? null;
+      const status = query.status === 'cancelled' ? 'canceled' : (query.status ?? null);
       const type = query.type ? TYPE_MAP[query.type] ?? query.type : null;
 
       const stock = await fastify.db.query(
@@ -145,12 +145,12 @@ export async function dashboardRoutes(fastify: FastifyInstance) {
         pendingReceipts: Number(receiptRow.pending),
         pendingDeliveries: Number(deliveryRow.pending),
         internalTransfersScheduled: Number(transfers.rows[0].scheduled),
-        receipts: {
+        receiptCard: {
           toReceive: Number(receiptRow.to_receive),
           late: Number(receiptRow.late),
           operations: Number(receiptRow.operations),
         },
-        deliveries: {
+        deliveryCard: {
           toDeliver: Number(deliveryRow.to_deliver),
           late: Number(deliveryRow.late),
           waiting: Number(deliveryRow.waiting),

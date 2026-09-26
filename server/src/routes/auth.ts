@@ -113,13 +113,15 @@ export async function authRoutes(fastify: FastifyInstance) {
   });
 
   fastify.post('/api/auth/reset-password', async (request, reply) => {
+    const raw = camelizeKeys(request.body ?? {}) as Record<string, unknown>;
+    if (raw.newPassword === undefined && typeof raw.password === 'string') raw.newPassword = raw.password;
     const body = parseBody(
       z.object({
         email: z.string().email(),
         otp: z.string().regex(/^\d{6}$/, 'OTP must be 6 digits'),
         newPassword: passwordSchema,
       }),
-      request.body,
+      raw,
     );
     const result = await fastify.db.query(
       `SELECT ot.id, ot.user_id

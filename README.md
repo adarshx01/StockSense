@@ -55,4 +55,4 @@ npm run build
 
 ## Production
 
-See `infra/DEPLOY.md` after the AWS stack is applied. The production database is a StockSense RDS instance in `ap-south-1`. Lambda reads `DATABASE_URL` and `JWT_SECRET` from Secrets Manager.
+The free-tier deploy is one public `db.t3.micro` Postgres (`gp2`, 20 GB, single-AZ) and a Lambda that is not attached to a VPC. The database password lives in the Lambda environment and in gitignored `server/.env`. There is no NAT gateway, no interface VPC endpoint, and no Secrets Manager secret for this app. URLs and smoke-test notes are in `infra/DEPLOY.md`.
