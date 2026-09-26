@@ -51,7 +51,7 @@ npm run build
 
 ## Password reset
 
-`POST /api/auth/forgot-password` stores a 6-digit OTP and sends it with Amazon SES from `SES_FROM_EMAIL` in `ap-south-1`. If SES rejects the message, the OTP stays stored. In `NODE_ENV=development` the JSON includes `otp` only when that send failed, and the code is written to the server log. Passwords are not logged.
+`POST /api/auth/forgot-password` stores a 6-digit OTP that expires in 10 minutes and emails it with SMTP (`SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`). Gmail needs an app password, not the normal account password. The code is sent only to the account email, so the showcase user must register or update their profile email to a real inbox. `manager@stocksense.local` cannot receive Gmail. The response never includes the code. Passwords are not logged.
 
 ## Production
 

@@ -99,14 +99,8 @@ export async function authRoutes(fastify: FastifyInstance) {
       [user.rows[0].id, otp, expiresAt],
     );
     const sent = await sendOtpEmail(email, otp);
-    if (!sent.delivered && process.env.NODE_ENV !== 'production') {
-      return reply.send({
-        message: 'If the email exists, an OTP has been sent',
-        devOtp: otp,
-      });
-    }
     if (!sent.delivered) {
-      return reply.status(502).send({ error: sent.error || 'Failed to send password reset email' });
+      return reply.status(502).send({ error: sent.error || 'Could not send the reset email. Check SMTP settings.' });
     }
     return reply.send({ message: 'If the email exists, an OTP has been sent' });
   });
