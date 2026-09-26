@@ -1,5 +1,7 @@
 # StockSense
 
+`Live Link` : `http://stocksense-web-541855875166.s3-website.ap-south-1.amazonaws.com/`
+
 Inventory API for receipts, deliveries, internal transfers, and physical adjustments. Every posted quantity change writes one append-only `stock_moves` row per product line.
 
 ## Stock rules
