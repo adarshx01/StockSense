@@ -14,7 +14,7 @@ const SETTINGS = [
   { to: '/settings/locations', label: 'Locations' },
 ];
 
-function Menu({ label, items }: { label: string; items: { to: string; label: string }[] }) {
+function Menu({ label, items, onClose }: { label: string; items: { to: string; label: string }[]; onClose: () => void }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -43,7 +43,7 @@ function Menu({ label, items }: { label: string; items: { to: string; label: str
       {open ? (
         <div className="menu-panel" role="menu">
           {items.map((item) => (
-            <NavLink key={item.to} to={item.to} role="menuitem" onClick={() => setOpen(false)}>
+            <NavLink key={item.to} to={item.to} role="menuitem" onClick={() => { setOpen(false); onClose(); }}>
               {item.label}
             </NavLink>
           ))}
@@ -53,7 +53,7 @@ function Menu({ label, items }: { label: string; items: { to: string; label: str
   );
 }
 
-export function Navbar({ open, onToggle }: { open: boolean; onToggle: () => void }) {
+export function Navbar({ open, onToggle, onClose }: { open: boolean; onToggle: () => void; onClose: () => void }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [avatarOpen, setAvatarOpen] = useState(false);
@@ -69,26 +69,26 @@ export function Navbar({ open, onToggle }: { open: boolean; onToggle: () => void
   }, []);
 
   return (
-    <header className="navbar">
+    <header className="navbar no-print">
       <NavLink to="/" className="brand">StockSense</NavLink>
       <button type="button" className="btn btn-ghost btn-sm nav-toggle" aria-expanded={open} aria-label="Open menu" onClick={onToggle}>
         Menu
       </button>
       <nav className={open ? 'nav-links open' : 'nav-links'} aria-label="Primary">
-        <NavLink to="/" end className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
+        <NavLink to="/" end className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')} onClick={onClose}>
           Dashboard
         </NavLink>
-        <Menu label="Operations" items={OPERATIONS} />
-        <NavLink to="/products" className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
+        <Menu label="Operations" items={OPERATIONS} onClose={onClose} />
+        <NavLink to="/products" className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')} onClick={onClose}>
           Products
         </NavLink>
-        <NavLink to="/stock" className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
+        <NavLink to="/stock" className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')} onClick={onClose}>
           Stock
         </NavLink>
-        <NavLink to="/move-history" className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
+        <NavLink to="/move-history" className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')} onClick={onClose}>
           Move History
         </NavLink>
-        <Menu label="Settings" items={SETTINGS} />
+        <Menu label="Settings" items={SETTINGS} onClose={onClose} />
       </nav>
       <div className="menu" ref={avatarRef}>
         <button type="button" className="avatar" aria-label="Account menu" aria-expanded={avatarOpen} onClick={() => setAvatarOpen((value) => !value)}>

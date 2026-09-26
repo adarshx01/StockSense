@@ -203,21 +203,21 @@ export function normalizeDocRow(value: unknown, fallbackKind?: DocKind): DocRow 
     str(raw.locationId ?? raw.location_id),
   ].filter(Boolean);
 
-  const from = str(
-    raw.from ??
-      raw.from_display ??
-      raw.receiveFrom ??
-      raw.receive_from ??
-      raw.from_short_code,
-  );
-  const to = str(
-    raw.to ??
-      raw.to_display ??
-      raw.deliveryAddress ??
-      raw.delivery_address ??
-      raw.to_short_code ??
-      raw.location_name,
-  );
+  const warehouseCode = str(raw.warehouseCode ?? raw.warehouse_code ?? raw.warehouse_short_code);
+  const place = (display: string, short: string) => {
+    if (display) return display;
+    if (warehouseCode && short) return `${warehouseCode}/${short}`;
+    return short;
+  };
+  const from =
+    str(raw.receiveFrom ?? raw.receive_from) ||
+    place(str(raw.from ?? raw.fromDisplay ?? raw.from_display), str(raw.from_short_code));
+  const to =
+    str(raw.deliveryAddress ?? raw.delivery_address) ||
+    place(
+      str(raw.to ?? raw.toDisplay ?? raw.to_display),
+      str(raw.to_short_code ?? raw.destination_short_code),
+    );
 
   return {
     id: str(raw.id),
@@ -225,12 +225,18 @@ export function normalizeDocRow(value: unknown, fallbackKind?: DocKind): DocRow 
     reference: str(raw.reference),
     from,
     to,
-    contact: str(raw.contact ?? raw.product_name ?? raw.productName),
+    contact: str(raw.contact),
     scheduleDate: str(raw.scheduleDate ?? raw.schedule_date).slice(0, 10),
     status: normalizeStatus(raw.status),
     warehouseId: str(raw.warehouseId ?? raw.warehouse_id),
     locationIds,
     productId: str(raw.productId ?? raw.product_id),
+    productName: str(raw.productName ?? raw.product_name),
+    locationName: str(raw.locationName ?? raw.location_name ?? raw.location_short_code),
+    recordedQty: firstNum(raw.recordedQty, raw.recorded_qty),
+    countedQty: firstNum(raw.countedQty, raw.counted_qty),
+    delta: firstNum(raw.delta),
+    reason: str(raw.reason),
   };
 }
 

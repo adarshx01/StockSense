@@ -105,6 +105,12 @@ export interface DocRow {
   warehouseId: string;
   locationIds: string[];
   productId: string;
+  productName: string;
+  locationName: string;
+  recordedQty: number | null;
+  countedQty: number | null;
+  delta: number | null;
+  reason: string;
 }
 
 export interface MoveRow {

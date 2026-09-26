@@ -333,7 +333,7 @@ tbody tr.clickable:hover, tbody tr.clickable:focus-visible { background: var(--b
 .kpis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
 .kpi span { display: block; color: var(--text-secondary); font-size: 0.75rem; margin-bottom: 6px; }
 .kpi strong { font-size: 1.25rem; }
-.filters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
 .toolbar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 .toolbar h1 { flex: 1; }
 .view-toggle { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
@@ -405,11 +405,21 @@ tbody tr.clickable:hover, tbody tr.clickable:focus-visible { background: var(--b
   .content { width: min(100% - 20px, 1180px); }
 }
 
+.print-only { display: none; }
+textarea.control { min-height: 88px; resize: vertical; }
+
 @media print {
-  body { background: white; color: black; }
+  body * { visibility: hidden; }
+  .print-only, .print-only * { visibility: visible; }
+  .print-only {
+    display: block !important;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    background: white !important;
+    color: black !important;
+    padding: 24px;
+  }
   .no-print { display: none !important; }
-  .app-shell, .content { display: block; }
-  .print-sheet, .print-sheet * { visibility: visible; }
-  .print-sheet { position: absolute; inset: 0; background: white; color: black; padding: 24px; }
-  .print-sheet .control, .print-sheet select, .print-sheet input { border: 0; background: transparent; color: black; padding: 0; }
 }
