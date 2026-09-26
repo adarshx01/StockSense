@@ -1,0 +1,17 @@
+{
+  "name": "stocksense",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w stocksense-server",
+    "test": "npm test -w stocksense-server",
+    "build": "npm run build -w stocksense-server",
+    "migrate": "npm run migrate -w stocksense-server",
+    "seed": "npm run seed -w stocksense-server",
+    "typecheck": "npm run typecheck -w stocksense-server"
+  }
+}
